@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 requests = "*"
 bleak = "*"
+paho-mqtt = "*"
 
 [dev-packages]
 
