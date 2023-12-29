@@ -28,18 +28,13 @@ logging.basicConfig(
     )
 logger = logging.getLogger(__name__)
 queue = asyncio.Queue()
-found = set()
-
 class TempAndHum:
     sensor_name = ""
     temperature = 0
     humidity = 0
 async def simple_callback(device: BLEDevice, advertisement_data: AdvertisementData):
     await asyncio.sleep(0.2)
-    global found, mqtt_server, mqtt_auth, mqtt_topic_root, queue
-    if advertisement_data.local_name in found:
-        logger.debug("Forkaster duplikat: %s", advertisement_data.local_name)
-        return
+    global mqtt_server, mqtt_auth, mqtt_topic_root, queue
     async with BleakClient(
             device,
             services=['0000181a-0000-1000-8000-00805f9b34fb'],

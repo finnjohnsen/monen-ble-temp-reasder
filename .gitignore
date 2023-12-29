@@ -2,3 +2,4 @@
 *.iml
 *.lock
 secrets.ini
+/__pycache__/
