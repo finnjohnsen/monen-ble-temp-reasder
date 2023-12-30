@@ -42,33 +42,39 @@ async def simple_callback(device: BLEDevice, advertisement_data: AdvertisementDa
     else:
         logger.info("Connecting -> " + advertisement_data.local_name)
     found.add(advertisement_data.local_name)
-    async with BleakClient(
-            device, timeout=8.0,
-            services=['0000181a-0000-1000-8000-00805f9b34fb'],
-    ) as client:
+    try:
 
-        sensor_result = TempAndHum()
-        sensor_result.sensor_name = advertisement_data.local_name
-        for service in client.services:
-            logger.debug("Service " + service.uuid)
-            for char in service.characteristics:
-                logger.debug("Characteristic " + char.uuid)
-                if char.uuid == '00002a6e-0000-1000-8000-00805f9b34fb':
-                    value = await client.read_gatt_char(char.uuid)
-                    integer_value = int.from_bytes(value, byteorder='little')
-                    if integer_value > 0:
-                        sensor_result.temperature = "{:.2f}".format(integer_value/100)
-                if char.uuid == '00002a6f-0000-1000-8000-00805f9b34fb':
-                    value = await client.read_gatt_char(char.uuid)
-                    integer_value = int.from_bytes(value, byteorder='little')
-                    if integer_value > 0:
-                        sensor_result.humidity = "{:.2f}".format(integer_value/100)
-        if not sensor_result.temperature == 0:
-            logger.info("Success; %s = %sC", sensor_result.sensor_name, sensor_result.temperature)
-            await queue.put((time.time(), sensor_result))
-        else:
-            logger.debug("Discarding null data from %s", advertisement_data.local_name)
-    logger.info("disconnected")
+        async with BleakClient(
+                device, timeout=8.0,
+                services=['0000181a-0000-1000-8000-00805f9b34fb'],
+        ) as client:
+
+            sensor_result = TempAndHum()
+            sensor_result.sensor_name = advertisement_data.local_name
+            for service in client.services:
+                logger.debug("Service " + service.uuid)
+                for char in service.characteristics:
+                    logger.debug("Characteristic " + char.uuid)
+                    if char.uuid == '00002a6e-0000-1000-8000-00805f9b34fb':
+                        value = await client.read_gatt_char(char.uuid)
+                        integer_value = int.from_bytes(value, byteorder='little')
+                        if integer_value > 0:
+                            sensor_result.temperature = "{:.2f}".format(integer_value/100)
+                    if char.uuid == '00002a6f-0000-1000-8000-00805f9b34fb':
+                        value = await client.read_gatt_char(char.uuid)
+                        integer_value = int.from_bytes(value, byteorder='little')
+                        if integer_value > 0:
+                            sensor_result.humidity = "{:.2f}".format(integer_value/100)
+            if not sensor_result.temperature == 0:
+                logger.info("Success; %s = %sC", sensor_result.sensor_name, sensor_result.temperature)
+                await queue.put((time.time(), sensor_result))
+            else:
+                logger.debug("Discarding null data from %s", advertisement_data.local_name)
+        logger.info("disconnected")
+    except asyncio.exceptions.TimeoutError:
+        logger.info("Timeout " + advertisement_data.local_name)
+        found.remove(advertisement_data.local_name)
+
 
 async def to_mqtt(queue: asyncio.Queue):
     logger.info("Starting queue consumer")
