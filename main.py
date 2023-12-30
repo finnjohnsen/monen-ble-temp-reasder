@@ -5,6 +5,7 @@ import configparser
 import json
 import time
 import paho.mqtt.publish as publish
+from typing import Sequence
 
 from datetime import datetime
 from bleak import BleakScanner
@@ -33,10 +34,11 @@ class TempAndHum:
     temperature = 0
     humidity = 0
 async def simple_callback(device: BLEDevice, advertisement_data: AdvertisementData):
+    logger.info("Connecting to " + advertisement_data.local_name)
     await asyncio.sleep(0.2)
     global mqtt_server, mqtt_auth, mqtt_topic_root, queue
     async with BleakClient(
-            device,
+            device, timeout=8.0,
             services=['0000181a-0000-1000-8000-00805f9b34fb'],
     ) as client:
         sensor_result = TempAndHum()
@@ -87,11 +89,11 @@ async def to_mqtt(queue: asyncio.Queue):
 async def main():
     logging.info('starting')
     serviceuid = ["0x181A"]
-    scanner = BleakScanner(
-        simple_callback, serviceuid,{}
-    )
+
     logger.info("BLE scan")
-    await scanner.start()
+    scanner: Sequence[BLEDevice] = await BleakScanner(
+        simple_callback, serviceuid).start()
+
     await asyncio.sleep(60.0)
     await scanner.stop()
     logger.info("BLE finished")
