@@ -22,7 +22,7 @@ mqtt_server = config['mqtt']['server']
 mqtt_auth = {'username': config['mqtt']['username'],
              'password': config['mqtt']['password']}
 
-log_level = logging.INFO
+log_level = logging.DEBUG
 logging.basicConfig(
     level=log_level,
     format="%(asctime)-15s %(name)-8s %(levelname)s: %(message)s",
@@ -35,7 +35,6 @@ class TempAndHum:
     humidity = 0
 async def simple_callback(device: BLEDevice, advertisement_data: AdvertisementData):
     logger.info("Connecting to " + advertisement_data.local_name)
-    await asyncio.sleep(0.2)
     global mqtt_server, mqtt_auth, mqtt_topic_root, queue
     async with BleakClient(
             device, timeout=8.0,
@@ -44,7 +43,9 @@ async def simple_callback(device: BLEDevice, advertisement_data: AdvertisementDa
         sensor_result = TempAndHum()
         sensor_result.sensor_name = advertisement_data.local_name
         for service in client.services:
+            logger.debug("Service " + service.uuid)
             for char in service.characteristics:
+                logger.debug("Characteristic " + char.uuid)
                 if char.uuid == '00002a6e-0000-1000-8000-00805f9b34fb':
                     value = await client.read_gatt_char(char.uuid)
                     integer_value = int.from_bytes(value, byteorder='little')
@@ -56,10 +57,10 @@ async def simple_callback(device: BLEDevice, advertisement_data: AdvertisementDa
                     if integer_value > 0:
                         sensor_result.humidity = "{:.2f}".format(integer_value/100)
         if not sensor_result.temperature == 0:
-            logger.info("%s = %sC", sensor_result.sensor_name, sensor_result.temperature)
+            logger.info("Success; %s = %sC", sensor_result.sensor_name, sensor_result.temperature)
             await queue.put((time.time(), sensor_result))
         else:
-            logger.info("Forkastet %s", advertisement_data.local_name)
+            logger.debug("Discarding null data from %s", advertisement_data.local_name)
 
     #logger.info("disconnected")
 
