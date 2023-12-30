@@ -92,9 +92,10 @@ async def main():
     serviceuid = ["0x181A"]
 
     logger.info("BLE scan")
-    scanner: Sequence[BLEDevice] = await BleakScanner(
-        simple_callback, serviceuid).start()
-
+    scanner = BleakScanner(
+        simple_callback, serviceuid,{}
+    )
+    await scanner.start()
     await asyncio.sleep(60.0)
     await scanner.stop()
     logger.info("BLE finished")
@@ -103,3 +104,9 @@ async def main():
     logging.info("All done")
 
 asyncio.run(main())
+
+
+# esp-temperature-1 = 40:91:51:AB:61:52
+# esp-temperature-2 = 40:91:51:B2:7F:26
+# esp-temperature-3 = 34:94:54:24:9C:B6
+# esp-temperature-4 = 40:91:51:9B:FC:36
