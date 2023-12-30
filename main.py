@@ -108,7 +108,7 @@ async def main():
         simple_callback, serviceuid,{}
     )
     await scanner.start()
-    await asyncio.sleep(10.0)
+    await asyncio.sleep(60.0)
     await scanner.stop()
     logger.info("BLE finished")
     await asyncio.sleep(5.0)
