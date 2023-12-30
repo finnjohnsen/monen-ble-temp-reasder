@@ -61,8 +61,8 @@ async def simple_callback(device: BLEDevice, advertisement_data: AdvertisementDa
             await queue.put((time.time(), sensor_result))
         else:
             logger.debug("Discarding null data from %s", advertisement_data.local_name)
-
-    #logger.info("disconnected")
+        client.disconnect()
+    logger.info("disconnected")
 
 async def to_mqtt(queue: asyncio.Queue):
     logger.info("Starting queue consumer")
