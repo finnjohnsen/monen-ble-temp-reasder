@@ -22,7 +22,7 @@ mqtt_server = config['mqtt']['server']
 mqtt_auth = {'username': config['mqtt']['username'],
              'password': config['mqtt']['password']}
 
-log_level = logging.DEBUG
+log_level = logging.INFO
 logging.basicConfig(
     level=log_level,
     format="%(asctime)-15s %(name)-8s %(levelname)s: %(message)s",
@@ -33,13 +33,21 @@ class TempAndHum:
     sensor_name = ""
     temperature = 0
     humidity = 0
+found = set()
 async def simple_callback(device: BLEDevice, advertisement_data: AdvertisementData):
-    logger.info("Connecting to " + advertisement_data.local_name)
-    global mqtt_server, mqtt_auth, mqtt_topic_root, queue
+    global found, mqtt_server, mqtt_auth, mqtt_topic_root, queue
+    if found.__contains__(advertisement_data.local_name):
+        logger.info("Skipping dup -> " + advertisement_data.local_name)
+        return
+    else:
+        logger.info("Connecting -> " + advertisement_data.local_name)
+    found.add(advertisement_data.local_name)
+    await asyncio.sleep(5.0)
     async with BleakClient(
             device, timeout=8.0,
             services=['0000181a-0000-1000-8000-00805f9b34fb'],
     ) as client:
+
         sensor_result = TempAndHum()
         sensor_result.sensor_name = advertisement_data.local_name
         for service in client.services:
@@ -58,7 +66,7 @@ async def simple_callback(device: BLEDevice, advertisement_data: AdvertisementDa
                         sensor_result.humidity = "{:.2f}".format(integer_value/100)
         if not sensor_result.temperature == 0:
             logger.info("Success; %s = %sC", sensor_result.sensor_name, sensor_result.temperature)
-            queue.put_nowait((time.time(), sensor_result))
+            await queue.put((time.time(), sensor_result))
         else:
             logger.debug("Discarding null data from %s", advertisement_data.local_name)
     logger.info("disconnected")
@@ -95,9 +103,10 @@ async def main():
         simple_callback, serviceuid,{}
     )
     await scanner.start()
-    await asyncio.sleep(60.0)
+    await asyncio.sleep(10.0)
     await scanner.stop()
     logger.info("BLE finished")
+    await asyncio.sleep(5.0)
     logging.info("Pushing MQTT")
     await asyncio.gather(to_mqtt(queue))
     logging.info("All done")
