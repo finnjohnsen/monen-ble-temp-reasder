@@ -71,7 +71,7 @@ async def simple_callback(device: BLEDevice, advertisement_data: AdvertisementDa
                 await queue.put((time.time(), sensor_result))
             else:
                 logger.debug("Discarding null data from %s", advertisement_data.local_name)
-        logger.info("disconnected")
+        logger.info("disconnected -> " + advertisement_data.local_name)
     except asyncio.exceptions.TimeoutError:
         logger.info("Timeout " + advertisement_data.local_name)
         found.remove(advertisement_data.local_name)
