@@ -42,7 +42,6 @@ async def simple_callback(device: BLEDevice, advertisement_data: AdvertisementDa
     else:
         logger.info("Connecting -> " + advertisement_data.local_name)
     found.add(advertisement_data.local_name)
-    await asyncio.sleep(5.0)
     async with BleakClient(
             device, timeout=8.0,
             services=['0000181a-0000-1000-8000-00805f9b34fb'],
