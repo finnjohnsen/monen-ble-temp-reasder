@@ -4,6 +4,7 @@ import struct
 import configparser
 import json
 import time
+import bleak
 import paho.mqtt.publish as publish
 from typing import Sequence
 
@@ -74,7 +75,9 @@ async def simple_callback(device: BLEDevice, advertisement_data: AdvertisementDa
     except asyncio.exceptions.TimeoutError:
         logger.info("Timeout " + advertisement_data.local_name)
         found.remove(advertisement_data.local_name)
-
+    except bleak.exc.BleakDBusError:
+        logger.info("BleakDBusError " + advertisement_data.local_name)
+        found.remove(advertisement_data.local_name)
 
 async def to_mqtt(queue: asyncio.Queue):
     logger.info("Starting queue consumer")
