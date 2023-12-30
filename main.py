@@ -58,10 +58,9 @@ async def simple_callback(device: BLEDevice, advertisement_data: AdvertisementDa
                         sensor_result.humidity = "{:.2f}".format(integer_value/100)
         if not sensor_result.temperature == 0:
             logger.info("Success; %s = %sC", sensor_result.sensor_name, sensor_result.temperature)
-            await queue.put((time.time(), sensor_result))
+            queue.put_nowait((time.time(), sensor_result))
         else:
             logger.debug("Discarding null data from %s", advertisement_data.local_name)
-        client.disconnect()
     logger.info("disconnected")
 
 async def to_mqtt(queue: asyncio.Queue):
